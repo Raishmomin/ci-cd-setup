@@ -1,5 +1,5 @@
 name: Deploy your project name
-## setup secrets in secretfolders  repo secrets
+## setup secrets in secret & variables ->  Repository secrets
 on:
   push:
     branches:
