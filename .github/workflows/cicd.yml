@@ -1,5 +1,5 @@
-name: Deploy FlyKatana
-
+name: Deploy your project name
+## setup secrets in secretfolders  repo secrets
 on:
   push:
     branches:
@@ -46,16 +46,16 @@ jobs:
       - name: Upload .env to server
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then  
-            scp -o StrictHostKeyChecking=no -i private_key .env ubuntu@${{ secrets.SERVER_DEV }}:~/flight-book/.env
+            scp -o StrictHostKeyChecking=no -i private_key .env ubuntu@${{ secrets.SERVER_DEV }}:~/your peoject directory/.env
           elif [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
-            scp -o StrictHostKeyChecking=no -i private_key .env ubuntu@${{ secrets.SERVER_PROD }}:~/flykatana/flight-book/.env
+            scp -o StrictHostKeyChecking=no -i private_key .env ubuntu@${{ secrets.SERVER_PROD }}:~/your peoject directory/.env
           fi
 
       - name: Deploy
         if: success() && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/prod')
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            ssh -o StrictHostKeyChecking=no -i private_key ubuntu@${{ secrets.SERVER_DEV }} 'cd /home/ubuntu/flight-book && git checkout dev && git stash && git pull origin dev && npm install && npm run build && sudo systemctl restart flight-book'
+            ssh -o StrictHostKeyChecking=no -i private_key ubuntu@${{ secrets.SERVER_DEV }} 'cd /home/ubuntu/your peoject directory && git checkout dev && git stash && git pull origin dev && npm install && npm run build && sudo systemctl restart your peoject name'
           elif [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
-            ssh -o StrictHostKeyChecking=no -i private_key ubuntu@${{ secrets.SERVER_PROD }} 'cd /home/ubuntu/flykatana/flight-book && git checkout prod && git stash && git pull origin prod && npm install && npm run build && sudo systemctl restart flight-book'
+            ssh -o StrictHostKeyChecking=no -i private_key ubuntu@${{ secrets.SERVER_PROD }} 'cd /home/ubuntu/your peoject directory && git checkout prod && git stash && git pull origin prod && npm install && npm run build && sudo systemctl restart your peoject name'
           fi
