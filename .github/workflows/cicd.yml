@@ -1,0 +1,61 @@
+name: Deploy FlyKatana
+
+on:
+  push:
+    branches:
+      - dev
+      - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "22.19.0"
+
+      - name: Save secrets to .env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "${{ secrets.ENV_DEV }}" > .env
+          elif [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
+            echo "${{ secrets.ENV_PROD }}" > .env
+          fi
+
+      - name: Build Next.js app
+        run: npm install && npm run build
+
+      - name: Store SSH key
+        run: |
+          echo "${PRIVATE_KEY}" > private_key
+          chmod 600 private_key
+        env:
+          PRIVATE_KEY: ${{ github.ref == 'refs/heads/prod' && secrets.SSH_KEY_PROD || secrets.SSH_KEY_DEV }}
+
+      - name: Check if application starts
+        run: |
+          npm run start &
+          sleep 3
+          curl -v http://localhost:3000
+
+      - name: Upload .env to server
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then  
+            scp -o StrictHostKeyChecking=no -i private_key .env ubuntu@${{ secrets.SERVER_DEV }}:~/flight-book/.env
+          elif [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
+            scp -o StrictHostKeyChecking=no -i private_key .env ubuntu@${{ secrets.SERVER_PROD }}:~/flykatana/flight-book/.env
+          fi
+
+      - name: Deploy
+        if: success() && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/prod')
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            ssh -o StrictHostKeyChecking=no -i private_key ubuntu@${{ secrets.SERVER_DEV }} 'cd /home/ubuntu/flight-book && git checkout dev && git stash && git pull origin dev && npm install && npm run build && sudo systemctl restart flight-book'
+          elif [[ "${{ github.ref }}" == "refs/heads/prod" ]]; then
+            ssh -o StrictHostKeyChecking=no -i private_key ubuntu@${{ secrets.SERVER_PROD }} 'cd /home/ubuntu/flykatana/flight-book && git checkout prod && git stash && git pull origin prod && npm install && npm run build && sudo systemctl restart flight-book'
+          fi
